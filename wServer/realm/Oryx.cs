@@ -34,28 +34,29 @@ namespace wServer.realm
             public string[] Killed;
         }
 
-        private readonly List<Tuple<string, ISetPiece>> _events = new List<Tuple<string, ISetPiece>>()
+        private readonly List<Tuple<string, ISetPiece, WmapTerrain>> _events = new List<Tuple<string, ISetPiece, WmapTerrain>>()
         {
-            Tuple.Create("Skull Shrine", (ISetPiece) new SkullShrine()),
-            Tuple.Create("Cube God", (ISetPiece) new CubeGod()),
-            Tuple.Create("Pentaract", (ISetPiece) new Pentaract()),
-            Tuple.Create("Grand Sphinx", (ISetPiece) new Sphinx()),
-            Tuple.Create("Lord of the Lost Lands", (ISetPiece) new LordoftheLostLands()),
-            Tuple.Create("Hermit God", (ISetPiece) new Hermit()),
-            Tuple.Create("Ghost Ship", (ISetPiece) new GhostShip()),
-            Tuple.Create("Fanatic of Chaos", (ISetPiece) new FanaticofChaos()),
+            Tuple.Create("Skull Shrine", (ISetPiece) new SkullShrine(), WmapTerrain.None),
+            Tuple.Create("Cube God", (ISetPiece) new CubeGod(),  WmapTerrain.None),
+            Tuple.Create("Pentaract", (ISetPiece) new Pentaract(),  WmapTerrain.None),
+            Tuple.Create("Grand Sphinx", (ISetPiece) new Sphinx(),  WmapTerrain.None),
+            Tuple.Create("Lord of the Lost Lands", (ISetPiece) new LordoftheLostLands(),  WmapTerrain.None),
+            Tuple.Create("Hermit God", (ISetPiece) new Hermit(), WmapTerrain.None),
+            Tuple.Create("Ghost Ship", (ISetPiece) new GhostShip(), WmapTerrain.None),
+            Tuple.Create("Fanatic of Chaos", (ISetPiece) new FanaticofChaos(), WmapTerrain.None),
             //Tuple.Create("Dragon Head", (ISetPiece) new RockDragon()),
-            Tuple.Create("shtrs Defense System", (ISetPiece) new Avatar()),
+            Tuple.Create("shtrs Defense System", (ISetPiece) new Avatar(), WmapTerrain.None),
             //Tuple.Create("Zombie Horde", (ISetPiece) new ZombieHorde())
-            
+            Tuple.Create("Lucky Ent God", (ISetPiece) new LuckyEnt(), WmapTerrain.Mountains),
+            Tuple.Create("Lucky Djinn", (ISetPiece) new LuckyDjinn(), WmapTerrain.Mountains)                   
         };
 
-        private readonly List<Tuple<string, ISetPiece>> _rareEvents = new List<Tuple<string, ISetPiece>>()
+        private readonly List<Tuple<string, ISetPiece, WmapTerrain>> _rareEvents = new List<Tuple<string, ISetPiece, WmapTerrain>>()
         {
-            Tuple.Create("Boshy", (ISetPiece) new Boshy()),
-            Tuple.Create("Sanic", (ISetPiece) new Sanic()),
-            Tuple.Create("The Kid", (ISetPiece) new TheKid()),
-            Tuple.Create("Megaman", (ISetPiece) new Megaman())
+            Tuple.Create("Boshy", (ISetPiece) new Boshy(), WmapTerrain.None),
+            Tuple.Create("Sanic", (ISetPiece) new Sanic(), WmapTerrain.None),
+            Tuple.Create("The Kid", (ISetPiece) new TheKid(), WmapTerrain.None),
+            Tuple.Create("Megaman", (ISetPiece) new Megaman(), WmapTerrain.None)
         };
 
         #region "Taunt data"
@@ -803,17 +804,32 @@ namespace wServer.realm
             player.SendInfo("Type \"/help\" for more help");
         }
 
-        private void SpawnEvent(string name, ISetPiece setpiece)
+        private void SpawnEvent(string name, ISetPiece setpiece, WmapTerrain terrain)
         {
             var pt = new IntPoint();
-            do
+
+
+            if (terrain == WmapTerrain.None)
             {
-                pt.X = _rand.Next(0, _world.Map.Width);
-                pt.Y = _rand.Next(0, _world.Map.Height);
-            } while ((_world.Map[pt.X, pt.Y].Terrain < WmapTerrain.Mountains ||
-                      _world.Map[pt.X, pt.Y].Terrain > WmapTerrain.MidForest) ||
-                      !_world.IsPassable(pt.X, pt.Y, true) ||
-                      _world.AnyPlayerNearby(pt.X, pt.Y));
+                do
+                {
+                    pt.X = _rand.Next(0, _world.Map.Width);
+                    pt.Y = _rand.Next(0, _world.Map.Height);
+                } while ((_world.Map[pt.X, pt.Y].Terrain < WmapTerrain.Mountains ||
+                        _world.Map[pt.X, pt.Y].Terrain > WmapTerrain.MidForest) ||
+                        !_world.IsPassable(pt.X, pt.Y, true) ||
+                        _world.AnyPlayerNearby(pt.X, pt.Y));
+            } 
+            else
+            {
+                do
+                {
+                    pt.X = _rand.Next(0, _world.Map.Width);
+                    pt.Y = _rand.Next(0, _world.Map.Height);
+                } while (_world.Map[pt.X, pt.Y].Terrain == terrain ||
+                        !_world.IsPassable(pt.X, pt.Y, true) ||
+                        _world.AnyPlayerNearby(pt.X, pt.Y));
+            }
 
             pt.X -= (setpiece.Size - 1) / 2;
             pt.Y -= (setpiece.Size - 1) / 2;
@@ -865,7 +881,7 @@ namespace wServer.realm
             var gameData = _world.Manager.Resources.GameData;
             if (gameData.ObjectDescs[gameData.IdToObjectType[evt.Item1]].PerRealmMax == 1)
                 events.Remove(evt);
-            SpawnEvent(evt.Item1, evt.Item2);
+            SpawnEvent(evt.Item1, evt.Item2, evt.Item3);
 
             // new event is critical?
             dat = null;
